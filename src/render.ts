@@ -127,10 +127,13 @@ function drawRoadSeg(r: RC, near: Proj, far: Proj, seg: Seg): void {
   const y1 = near.y;
   const y2 = far.y;
 
-  // ground band (full width)
-  ctx.fillStyle = (seg.index >> 2) % 2 ? cfg.ground1 : cfg.ground2;
-  const gyTop = Math.min(y1, y2);
-  ctx.fillRect(0, gyTop, W, Math.abs(y1 - y2) + 1);
+  // ground band (full width) — skip sub-pixel bands; a base wash is drawn once below
+  const bandH = Math.abs(y1 - y2) + 1;
+  if (bandH >= 2) {
+    ctx.fillStyle = (seg.index >> 2) % 2 ? cfg.ground1 : cfg.ground2;
+    const gyTop = Math.min(y1, y2);
+    ctx.fillRect(0, gyTop, W, bandH);
+  }
 
   // road surface
   const alt = (seg.index >> 3) % 2 === 0;
@@ -139,8 +142,8 @@ function drawRoadSeg(r: RC, near: Proj, far: Proj, seg: Seg): void {
     [far.x + far.w, y2], [far.x - far.w, y2],
   ], alt ? shade(CONFIG.roadColor, 10) : CONFIG.roadColor);
 
-  // red/white curbs
-  const curb = (seg.index >> 1) % 2 ? '#f2f2f2' : CONFIG.curbRed;
+  // red/white curbs (alternate every 4 segments to avoid far-distance moire)
+  const curb = (seg.index >> 2) % 2 ? '#f2f2f2' : CONFIG.curbRed;
   const cw1 = Math.max(1, near.w * 0.09);
   const cw2 = Math.max(0.5, far.w * 0.09);
   poly(ctx, [
@@ -513,6 +516,11 @@ export function render(ctx: CanvasRenderingContext2D, g: Game, W: number, H: num
 
   drawSky(r);
 
+  // base ground wash below the horizon: per-segment bands only add detail up close,
+  // which kills the far-distance banding moire and guarantees no sky-colored gaps
+  ctx.fillStyle = cfg.ground1;
+  ctx.fillRect(0, horizonY, W, Math.max(0, H - horizonY) + 4);
+
   // project DRAW segments ahead
   let xa = 0;
   let dxa = -(segAtDist(g, g.playerDist).curve * CURVE_FACTOR * basePct);
@@ -566,7 +574,8 @@ export function render(ctx: CanvasRenderingContext2D, g: Game, W: number, H: num
     if (sp.kind === 'nitro') drawNitroPickup(ctx, pr.x, pr.y, pr.s * 2600, g.time);
     else if (sp.kind === 'heart') drawHeartPickup(ctx, pr.x, pr.y, pr.s * 2600, g.time);
     else {
-      const w = Math.max(4, pr.s * 15000);
+      // car width ~0.35 of road width at the same depth (road full width = p * ROAD_HALF * ROAD_FACTOR * W)
+      const w = Math.max(4, pr.s * ROAD_HALF * ROAD_FACTOR * W * 0.35);
       drawCar(ctx, pr.x, pr.y - w * 0.1, w, sp.color, 0, g.time, false, false, sp.spin);
     }
   }
