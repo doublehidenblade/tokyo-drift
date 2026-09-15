@@ -155,14 +155,19 @@ function drawRoadSeg(r: RC, near: Proj, far: Proj, seg: Seg): void {
     [far.x + far.w + cw2, y2], [far.x + far.w, y2],
   ], curb);
 
-  // lane dashes
+  // lane dashes: 3 lanes => dividers at +/- 1/3 of the road width
   if ((seg.index >> 2) % 2 === 0) {
     const lw1 = Math.max(0.75, near.w * 0.022);
     const lw2 = Math.max(0.4, far.w * 0.022);
-    poly(ctx, [
-      [near.x - lw1, y1], [near.x + lw1, y1],
-      [far.x + lw2, y2], [far.x - lw2, y2],
-    ], cfg.isDay ? 'rgba(230,230,230,0.85)' : 'rgba(160,220,255,0.7)');
+    const laneCol = cfg.isDay ? 'rgba(230,230,230,0.85)' : 'rgba(160,220,255,0.7)';
+        for (const lo of [-1 / 3, 1 / 3]) {
+      const nx = near.x + lo * near.w;
+      const fx = far.x + lo * far.w;
+      poly(ctx, [
+        [nx - lw1, y1], [nx + lw1, y1],
+        [fx + lw2, y2], [fx - lw2, y2],
+        ], laneCol);
+    }
   }
 
   // checkered start/finish line
@@ -490,7 +495,7 @@ function projectPoint(r: RC, dist: number, lx: number): { x: number; y: number; 
   const b = r.projs[i + 1];
   const p = lerp(a.p, b.p, f);
   const xa = lerp(a.xa, b.xa, f);
-  const sx = r.W / 2 + p * (g.playerX * ROAD_HALF - xa + lx) * ROAD_FACTOR * (r.W / 2) + r.shx;
+  const sx = r.W / 2 + p * (lx + xa - g.playerX * ROAD_HALF) * ROAD_FACTOR * (r.W / 2) + r.shx;
   const gy = groundYAt(g, dist);
   const sy = r.horizonY + p * ((r.playerY + CAM_H) - gy) * Y_FACTOR * (r.H / 2) + r.shy;
   return { x: sx, y: sy, s: p };
@@ -529,7 +534,7 @@ export function render(ctx: CanvasRenderingContext2D, g: Game, W: number, H: num
     const seg = segAtDist(g, wdist);
     const relZ = wdist - g.playerDist;
     const p = CAM_DEPTH / Math.max(1, relZ);
-    const sx = W / 2 + p * (g.playerX * ROAD_HALF - xa) * ROAD_FACTOR * (W / 2) + shx;
+    const sx = W / 2 + p * (xa - g.playerX * ROAD_HALF) * ROAD_FACTOR * (W / 2) + shx;
     const wy = (playerY + CAM_H) - seg.y;
     const sy = horizonY + p * wy * Y_FACTOR * (H / 2) + shy;
     const hw = p * ROAD_HALF * ROAD_FACTOR * (W / 2);
@@ -574,8 +579,8 @@ export function render(ctx: CanvasRenderingContext2D, g: Game, W: number, H: num
     if (sp.kind === 'nitro') drawNitroPickup(ctx, pr.x, pr.y, pr.s * 2600, g.time);
     else if (sp.kind === 'heart') drawHeartPickup(ctx, pr.x, pr.y, pr.s * 2600, g.time);
     else {
-      // car width ~0.35 of road width at the same depth (road full width = p * ROAD_HALF * ROAD_FACTOR * W)
-      const w = Math.max(4, pr.s * ROAD_HALF * ROAD_FACTOR * W * 0.35);
+      // car width = one lane = 1/3 of road width at the same depth
+      const w = Math.max(4, pr.s * ROAD_HALF * ROAD_FACTOR * W * (1 / 3));
       drawCar(ctx, pr.x, pr.y - w * 0.1, w, sp.color, 0, g.time, false, false, sp.spin);
     }
   }
