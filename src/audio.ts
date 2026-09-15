@@ -102,3 +102,15 @@ export function whoosh(): void {
     /* ignore */
   }
 }
+
+export function scrape(): void {
+  if (!noiseSynth) return;
+  try {
+    // short metallic grind for clipping the road edge
+    noiseSynth.envelope.decay = 0.08;
+    noiseSynth.triggerAttackRelease(0.1);
+    noiseSynth.envelope.decay = 0.25;
+  } catch {
+    /* ignore */
+  }
+}

@@ -82,6 +82,7 @@ export type GameEvent =
   | 'finish'
   | 'thud'
   | 'whoosh'
+  | 'scrape'
   | 'nitro';
 
 export interface Game {
@@ -103,6 +104,7 @@ export interface Game {
   shake: number;
   skyOffset: number;
   edgeBumpT: number;
+  scrapeT: number;
   airT: number;
   carLift: number;
   prevSlope: number;
@@ -148,6 +150,7 @@ export function newGame(settings: Settings, carIndex: number): Game {
     shake: 0,
     skyOffset: 0,
     edgeBumpT: 0,
+    scrapeT: 0,
     airT: 0,
     carLift: 0,
     prevSlope: 0,
@@ -232,6 +235,7 @@ export function resetTitleDemo(g: Game): void {
   g.shake = 0;
   g.airT = 0;
   g.carLift = 0;
+  g.scrapeT = 0;
   g.particles = [];
   g.pickups = [];
   spawnRivals(g);
@@ -255,6 +259,7 @@ export function startRace(g: Game): void {
   g.shake = 0;
   g.airT = 0;
   g.carLift = 0;
+  g.scrapeT = 0;
   g.prevSlope = 0;
   g.lap = 1;
   g.finishTime = 0;
@@ -491,8 +496,24 @@ export function update(g: Game, dt: number, input: Input, W: number, H: number, 
           life: 0.5, maxLife: 0.5, color: '#8a7a5a', size: 3 + Math.random() * 3, grav: 200,
         });
       }
+      // bright metal sparks fly off the scraping side so the slowdown reads visually
+      if (Math.random() < 0.85) {
+        g.particles.push({
+          x: 240 + (g.playerX > 0 ? 74 : -74), y: 648,
+          vx: (Math.random() - 0.5) * 220, vy: -60 - Math.random() * 160,
+          life: 0.3, maxLife: 0.3,
+          color: ['#ffd23f', '#ff9f1c', '#fff3b0'][(Math.random() * 3) | 0],
+          size: 2 + Math.random() * 2.5, grav: 620,
+        });
+      }
+      g.scrapeT += dt;
+      if (g.scrapeT > 0.28) {
+        g.scrapeT = 0;
+        g.events.push('scrape');
+      }
     } else {
       g.edgeBumpT = 0;
+      g.scrapeT = 0;
     }
 
     // crest air: slope sign flips + -> - while fast => little jump

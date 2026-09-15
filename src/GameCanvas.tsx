@@ -36,6 +36,7 @@ export default function GameCanvas() {
         case 'thud': audio.thud(); haptic('heavy'); break;
         case 'whoosh': audio.whoosh(); haptic('light'); break;
         case 'nitro': audio.whoosh(); haptic('medium'); break;
+        case 'scrape': audio.scrape(); haptic('light'); break;
       }
     }
     g.events.length = 0;
