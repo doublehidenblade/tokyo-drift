@@ -1,0 +1,25 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #050510;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  font-family: 'Press Start 2P', monospace;
+}
+
+#root {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #050510;
+}
+
+canvas {
+  display: block;
+  image-rendering: pixelated;
+}
